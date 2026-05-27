@@ -500,7 +500,7 @@ MAVLinkプロトコルで使用されるArduPilotのモード定数:
 
 ### MAVLink Cライブラリ
 
-MAVLink Cライブラリは `mavlink_ros2_bridge/include/c_library_v2/` にベンダリングされている (SYSTEMヘッダとしてインクルード)。
+MAVLink Cライブラリは `mavlink_ros2_bridge` の git submodule として `mavlink_ros2_bridge/include/c_library_v2/` に配置される。ワークスペース取得時は `vcs import --recursive src < robotboat.repos` で submodule も取得すること。CMakeではSYSTEMヘッダとしてインクルードされる。
 
 ### QGroundControl連携時の注意
 

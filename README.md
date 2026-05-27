@@ -24,7 +24,13 @@ RTK-GNSSによる高精度測位を用いた自律走行地上ローバーシス
 ```bash
 git clone https://github.com/IgarashiBME/robotboat_ros2.git ~/ros2_ws
 cd ~/ros2_ws
-vcs import src < robotboat.repos
+vcs import --recursive src < robotboat.repos
+```
+
+既に `vcs import` 済みで `mavlink_ros2_bridge/include/c_library_v2/` が未取得の場合:
+
+```bash
+git -C src/mavlink_ros2_bridge submodule update --init --recursive
 ```
 
 ## ビルド

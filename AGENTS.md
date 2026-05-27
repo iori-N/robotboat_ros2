@@ -10,7 +10,7 @@ ROS2 Jazzy workspace for an autonomous boat with RTK-GNSS positioning. This repo
 
 ```bash
 # Import source packages
-vcs import src < robotboat.repos
+vcs import --recursive src < robotboat.repos
 
 # Build (bme_common_msgs must be built first)
 source /opt/ros/jazzy/setup.bash
