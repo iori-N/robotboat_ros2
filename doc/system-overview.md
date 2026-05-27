@@ -174,7 +174,9 @@ u-blox GNSS受信機のシリアルドライバ。UBXバイナリプロトコル
 | `moving_base_node` | Moving Base | `/gnss_odom`, `/heading_imu`, `/relposned` |
 
 - `rtk_rover_node` は `/ntrip_rtcm` を購読し、受信したRTCMデータをシリアルポートに書き込む
-- `moving_base_node` は相対位置ベクトル (NE) からENUヨー角を算出し、Odometry/Imuとして配信
+- `moving_base_node` は相対位置ベクトル (NE) からENUヨー角を算出し、QGCパラメータ `gnss_ofs_fwd`, `gnss_ofs_left`, `gnss_ofs_up`, `gnss_ofs_yaw` によるアンテナ位置から代表点へのオフセットを適用して `/gnss/solution`, `/gnss_odom`, `/heading_imu` を配信
+- `/gnss/solution` の緯度経度・UTM座標・方位は補正後代表点を表す。生GNSSデータは `/pvt`, `/hpposllh`, `/relposned`, `/navsatfix`, `/utm`, `/gngga` に残す
+- GNSSオフセットの保存値は `~/.ros/mavlink_bridge_params.yaml` が優先され、未保存時は launch 引数の初期値を使用
 - UBX解析は `ubx_parser.py` でステートレスに実装 (同期バイト検出 → Fletcher-8チェックサム検証 → struct.unpackでデータクラスに展開)
 
 **パラメータ**:
@@ -264,6 +266,7 @@ Gazebo Harmonicによるスキッドステアローバーシミュレーショ�
   - JointStatePublisher: `/joint_states`
 - **ros_gz_bridge** (`config/bridge.yaml`): ROS2-Gazebo間トピック変換
 - **fake_gnss_node**: `/ground_truth/odom` → `/gnss/solution` (UTM座標に変換)
+- シミュレーションの `/gnss/solution` には、現時点では実機用GNSSオフセットパラメータ `gnss_ofs_*` を反映しない
 - **teleop_key_node**: キーボード操作 (w/a/s/d/q/e)
 
 ---
