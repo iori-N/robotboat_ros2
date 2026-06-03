@@ -52,3 +52,6 @@ QGCの Parameters ビューから以下のパラメータをリアルタイム�
 | `pwm_min` | PWM最小値 (us) | 1000 |
 | `pwm_max` | PWM最大値 (us) | 2000 |
 | `steering_reverse` | ステアリング反転 | 0.0 |
+| `throttle_reverse` | 前後方向のスロットル反転 | 0.0 |
+| `left_motor_reverse` | 左モーター個別反転 (differential時) | 0.0 |
+| `right_motor_reverse` | 右モーター個別反転 (differential時) | 0.0 |

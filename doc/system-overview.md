@@ -211,7 +211,7 @@ MAVLink v2 UDPブリッジ。QGroundControlに対してArduPilot地上ローバ�
 
 **QGCチューニングパラメータ** (MAVLink PARAM_SETで変更可能):
 - 制御系: `Kp`, `Kcte`, `Ki`, `Kd`, `look_ahead`, `pivot_threshold`, `wp_arrival_dist` 等
-- 出力系: `throttle_range`, `pivot_range`, `driver_mix`, `pwm_center/min/max`, `steering_reverse` 等
+- 出力系: `throttle_range`, `pivot_range`, `driver_mix`, `pwm_center/min/max`, `steering_reverse`, `left_motor_reverse`, `right_motor_reverse` 等
 - `~/.ros/mavlink_bridge_params.yaml` に永続化
 
 ### 3.5 look_ahead_control
