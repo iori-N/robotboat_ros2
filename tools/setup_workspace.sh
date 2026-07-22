@@ -82,7 +82,12 @@ if [ -d "${WS_DIR}/src/mavlink_ros2_bridge/.git" ]; then
   git -C "${WS_DIR}/src/mavlink_ros2_bridge" submodule update --init --recursive
 fi
 
+# ROS-generated setup scripts may read optional variables without first
+# checking whether they are defined, so temporarily disable nounset.
+set +u
+# shellcheck source=/dev/null
 source "$ROS_SETUP"
+set -u
 
 python3 -m venv --system-site-packages "$VENV_DIR"
 source "${VENV_DIR}/bin/activate"
@@ -92,7 +97,10 @@ python3 -m pip install pyproj
 
 if [ "$RUN_BUILD" -eq 1 ]; then
   colcon build --symlink-install --packages-select bme_common_msgs
+  set +u
+  # shellcheck source=/dev/null
   source "${WS_DIR}/install/setup.bash"
+  set -u
   colcon build --symlink-install
 fi
 
