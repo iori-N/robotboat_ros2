@@ -15,17 +15,17 @@ RTK-GNSSによる高精度測位を用いた自律走行地上ローバーシス
 
 ### 追加依存
 
-- **pyproj**: `~/ros2_ws/.venv` 内にインストール済み (rosdep管理外)
-  - 使用パッケージ: `ublox_gnss_driver`, `look_ahead_control`
-- **pyserial**: `ublox_gnss_driver`, `maestro_driver` で使用
+- **pyproj**: `~/minix_ws/.venv` 内にインストール済み (rosdep管理外)
+  - 使用パッケージ: `lg580p_gnss_driver`, `look_ahead_control`, `ublox_gnss_driver` (legacy)
+- **pyserial**: `lg580p_gnss_driver`, `maestro_driver`, `ublox_gnss_driver` (legacy) で使用
 
 ## ソースコードの取得
 
 依存パッケージのインストール、ソース取得、venv作成、`pyproj` インストール、ビルドまでまとめて実行する場合:
 
 ```bash
-git clone https://github.com/IgarashiBME/robotboat_ros2.git ~/ros2_ws
-cd ~/ros2_ws
+git clone https://github.com/IgarashiBME/robotboat_ros2.git ~/minix_ws
+cd ~/minix_ws
 tools/setup_workspace.sh
 ```
 
@@ -38,8 +38,8 @@ tools/setup_workspace.sh --no-build
 手動で取得する場合:
 
 ```bash
-git clone https://github.com/IgarashiBME/robotboat_ros2.git ~/ros2_ws
-cd ~/ros2_ws
+git clone https://github.com/IgarashiBME/robotboat_ros2.git ~/minix_ws
+cd ~/minix_ws
 vcs import --recursive src < robotboat.repos
 ```
 
@@ -56,10 +56,10 @@ git -C src/mavlink_ros2_bridge submodule update --init --recursive
 source /opt/ros/jazzy/setup.bash
 
 # 2. pyproj用venvの有効化
-source ~/ros2_ws/.venv/bin/activate
+source ~/minix_ws/.venv/bin/activate
 
 # 3. bme_common_msgs を先にビルド (他パッケージが依存)
-cd ~/ros2_ws
+cd ~/minix_ws
 colcon build --symlink-install --packages-select bme_common_msgs
 source install/setup.bash
 
@@ -80,9 +80,10 @@ colcon build --packages-select <package_name>
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source ~/ros2_ws/install/setup.bash
+source ~/minix_ws/install/setup.bash
 
-ros2 launch ublox_gnss_driver ublox_gnss.launch.py
+ros2 launch lg580p_gnss_driver lg580p_gnss.launch.py
+# legacy (u-blox 2受信機構成): ros2 launch ublox_gnss_driver ublox_gnss.launch.py
 ros2 launch ntrip_client ntrip_client.launch.py
 ros2 launch mavlink_ros2_bridge mavlink_bridge.launch.py
 ros2 launch look_ahead_control look_ahead_following.launch.py
@@ -93,7 +94,7 @@ ros2 run maestro_driver maestro_driver_node
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-source ~/ros2_ws/install/setup.bash
+source ~/minix_ws/install/setup.bash
 
 ros2 launch bme_simplerover_gazebo sim.launch.py
 ros2 launch mavlink_ros2_bridge mavlink_bridge.launch.py

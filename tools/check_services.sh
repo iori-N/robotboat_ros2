@@ -6,7 +6,7 @@ WS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ROS_TIMEOUT="${ROS_TIMEOUT:-5s}"
 
 SERVICES=(
-  "ros2-ublox|/rtk_rover_node /moving_base_node|/gnss/solution"
+  "ros2-lg580p|/lg580p_node|/gnss/solution"
   "ros2-ntrip|/ntrip_client_node|/ntrip_rtcm"
   "ros2-mavlink|/mavlink_bridge_node|/mav/modes"
   "ros2-look-ahead|/look_ahead_following|/auto_log /rc_pwm /cmd_vel"

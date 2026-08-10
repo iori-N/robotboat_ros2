@@ -23,7 +23,7 @@ ROS2 Jazzy + Gazebo Harmonic で構成される。
 
 主な特徴:
 
-- **RTK-GNSS測位**: u-blox F9シリーズ受信機2台 (RTKローバー + Moving Base) によるcm級測位・ヘディング取得
+- **RTK-GNSS測位**: Quectel LG580P (デュアルアンテナ、1受信機) によるcm級測位・ヘディング取得(`lg580p_gnss_driver`)。u-blox F9シリーズ受信機2台構成(RTKローバー + Moving Base、`ublox_gnss_driver`)はlegacyとして残置
 - **NTRIP補正**: NTRIPサーバーからRTCM補正データを受信しRTK Fixを実現
 - **QGroundControl連携**: MAVLink v2プロトコルでQGCと通信し、ミッション(ウェイポイント)計画・パラメータ調整・テレメトリ表示を実現。ArduPilot地上ローバーをエミュレート
 - **Pure Pursuit制御**: Look-ahead + PI クロストラックエラー補正による経路追従
@@ -55,20 +55,17 @@ ROS2 Jazzy + Gazebo Harmonic で構成される。
 | ← /auto_log       |  |   +-------------------+   |
 | ← /gnss/solution   |  |                           |
 +--------------------+  |   +-------------------+   |
-                        |   | ublox_gnss_driver |   |
+                        |   | lg580p_gnss_driver|   |
                         |   | (Python)          |   |
                         |   |                   |   |
-                        |   | rtk_rover_node    |   |
-                        |   |  u-blox RTK ←-----+---+
+                        |   | lg580p_node       |   |
+                        |   |  ANT1(位置)       |   |
+                        |   |  ANT2(ヘディング) |   |
+                        |   |  LG580P RTK ←-----+---+
                         |   |  /gnss/solution   |  RTCM書込
-                        |   |  /pvt, /hpposllh  |
-                        |   |  /gngga, /utm     |
-                        |   |                   |
-                        |   | moving_base_node  |
-                        |   |  u-blox MB        |
                         |   |  /gnss_odom       |
                         |   |  /heading_imu     |
-                        |   |  /relposned       |
+                        |   |  /gngga           |
                         |   +-------------------+
                         |
                         v
@@ -97,6 +94,12 @@ ROS2 Jazzy + Gazebo Harmonic で構成される。
                             |   → モーター       |
                             +--------------------+
 ```
+
+> **legacy構成**: `ublox_gnss_driver` (u-blox F9受信機2台: `rtk_rover_node` +
+> `moving_base_node`) も引き続きリポジトリに残っている。`lg580p_gnss_driver`
+> と同じ `/gnss/solution` を発行するため、下流(`look_ahead_control`,
+> `mavlink_ros2_bridge`)からは差異が見えない。両者は同時起動しない
+> (トピック衝突のため)。詳細は3.2節参照。
 
 ### シミュレーション構成
 
@@ -132,7 +135,8 @@ ROS2 Jazzy + Gazebo Harmonic で構成される。
 | パッケージ | 言語 | ビルド | 役割 |
 |-----------|------|--------|------|
 | `bme_common_msgs` | C++ | ament_cmake | カスタムメッセージ定義 |
-| `ublox_gnss_driver` | Python | ament_python | u-blox GNSS UBXプロトコルドライバ |
+| `lg580p_gnss_driver` | Python | ament_python | Quectel LG580P GNSS NMEA/PQTMプロトコルドライバ (現行) |
+| `ublox_gnss_driver` | Python | ament_python | u-blox GNSS UBXプロトコルドライバ (legacy) |
 | `ntrip_client` | Python | ament_python | NTRIP v2クライアント (RTK補正) |
 | `mavlink_ros2_bridge` | C++ | ament_cmake | MAVLink/QGCブリッジ |
 | `look_ahead_control` | Python | ament_python | Pure Pursuit経路追従制御 |
@@ -162,7 +166,41 @@ u-blox UBXプロトコル (u-blox F9 HPG 1.50) に基づくカスタムメッセ
 - ヘディング状態・角度
 - 精度情報 (水平・垂直, mm単位)
 
-### 3.2 ublox_gnss_driver
+### 3.2 lg580p_gnss_driver (現行)
+
+Quectel LG580P (デュアルアンテナRTK+ヘディング受信機) のシリアルドライバ。
+NMEA 0183 + PQTM (Quectelプロプライエタリ) プロトコルを解析する。u-blox
+2受信機構成 (`ublox_gnss_driver`) と異なり、1受信機・1シリアルポートで
+位置とヘディングの両方を取得できるため、ノードも1つに統合されている。
+
+**ノード**:
+
+| ノード | 入力 | 主な出力 |
+|--------|------|---------|
+| `lg580p_node` | ANT1(位置) + ANT2(ヘディング) | `/gnss/solution`, `/gnss_odom`, `/heading_imu`, `/navsatfix`, `/gngga` |
+
+- 解析するセンテンス: `GGA`/`GST` (標準NMEA), `PQTMPVT`/`PQTMTAR` (Quectel独自)
+- `GGA`の`<Quality>` (4=RTK Fixed, 5=RTK Float) から `position_rtk_status` を、
+  `PQTMTAR`の`<Quality>`から `heading_rtk_status` を導出する
+- `PQTMTAR`の`<Heading>` (真北基準・時計回り0-360°) を `enu_deg = 90 - heading_deg`
+  でENUヨー角に変換してから、QGCパラメータ `gnss_ofs_fwd`, `gnss_ofs_left`,
+  `gnss_ofs_up`, `gnss_ofs_yaw` によるアンテナ位置から代表点へのオフセットを適用
+- `/ntrip_rtcm` を購読し、受信したRTCMデータをシリアルポートに書き込む (ublox_gnss_driverと同じ役割)
+- GNSSオフセットの保存値は `~/.ros/mavlink_bridge_params.yaml` が優先され、未保存時は launch 引数の初期値を使用
+- NMEA/PQTM解析は `nmea_parser.py` でステートレスに実装 (行読み取り → XORチェックサム検証 → フィールド分解)
+- `PQTMPVT`/`PQTMTAR` の出力はLG580Pの工場出荷時設定で有効とは限らない。事前に
+  `$PQTMCFGMSGRATE` 等で出力を有効化しておく必要がある (本ノードは受信機の
+  初期設定は行わない、u-bloxを`tools/configure_ublox_ports.py`で設定するのと同じ位置づけ)
+
+**パラメータ**:
+- `port`: シリアルデバイスパス (例: `/dev/ttyUSB0`, USB-C接続時はCH342経由)
+- `baudrate`: 460800 (LG580P既定値)
+- `frame_id`: TFフレーム名
+
+### 3.3 ublox_gnss_driver (legacy)
+
+> `lg580p_gnss_driver` (3.2節) に置き換え済み。デプロイでは既定で無効化されて
+> いるが、ロールバック用にコード・deployファイルは残置している。
 
 u-blox GNSS受信機のシリアルドライバ。UBXバイナリプロトコルを解析する。
 
@@ -184,7 +222,7 @@ u-blox GNSS受信機のシリアルドライバ。UBXバイナリプロトコル
 - `baudrate`: RTKローバー 115200, Moving Base 38400
 - `frame_id`: TFフレーム名
 
-### 3.3 ntrip_client
+### 3.4 ntrip_client
 
 NTRIP v2プロトコルでRTK補正データ (RTCM) を取得するクライアント。
 
@@ -198,7 +236,7 @@ NTRIP v2プロトコルでRTK補正データ (RTCM) を取得するクライア�
 - `ntrip_username` / `ntrip_password`: 認証情報
 - `ntrip_mountpoint`: 補正ストリーム名
 
-### 3.4 mavlink_ros2_bridge
+### 3.5 mavlink_ros2_bridge
 
 MAVLink v2 UDPブリッジ。QGroundControlに対してArduPilot地上ローバーをエミュレートする。
 
@@ -214,7 +252,7 @@ MAVLink v2 UDPブリッジ。QGroundControlに対してArduPilot地上ローバ�
 - 出力系: `throttle_range`, `pivot_range`, `driver_mix`, `pwm_center/min/max`, `steering_reverse`, `left_motor_reverse`, `right_motor_reverse` 等
 - `~/.ros/mavlink_bridge_params.yaml` に永続化
 
-### 3.5 look_ahead_control
+### 3.6 look_ahead_control
 
 Pure Pursuit経路追従制御ノード。PIクロストラックエラー (CTE) 補正付き。
 
@@ -239,7 +277,7 @@ Pure Pursuit経路追従制御ノード。PIクロストラックエラー (CTE)
 3. 経路追従制御実行 (座標変換 → 方位角計算 → PIステアリング → PWM出力)
 4. ウェイポイント到達で次点へ進行、全完了で停止
 
-### 3.6 maestro_driver
+### 3.7 maestro_driver
 
 Pololu Maestroサーボコントローラのドライバ。ROS2 RC PWMをMaestro Compact Protocolに変換する。
 
@@ -255,7 +293,7 @@ Pololu Maestroサーボコントローラのドライバ。ROS2 RC PWMをMaestro
 - `failsafe_timeout`: タイムアウト秒数 (デフォルト 0.5)
 - `pwm_min` / `pwm_max`: PWMクランプ範囲 (1000-2000us)
 
-### 3.7 bme_simplerover_gazebo
+### 3.8 bme_simplerover_gazebo
 
 Gazebo Harmonicによるスキッドステアローバーシミュレーション。
 
@@ -277,15 +315,16 @@ Gazebo Harmonicによるスキッドステアローバーシミュレーショ�
 
 | トピック | 型 | Publisher | Subscriber | 説明 |
 |---------|---|----------|-----------|------|
-| `/gnss/solution` | `GnssSolution` | rtk_rover_node / fake_gnss_node | mavlink_bridge, look_ahead_control, moving_base_node | 統合GNSS解 |
-| `/pvt` | `PVT` | rtk_rover_node | — | UBX-NAV-PVT |
-| `/hpposllh` | `HPPOSLLH` | rtk_rover_node | — | 高精度位置 |
-| `/gngga` | `String` | rtk_rover_node | ntrip_client | NMEA GGA文 |
-| `/ntrip_rtcm` | `UInt8MultiArray` | ntrip_client | rtk_rover_node | RTCM補正データ |
-| `/relposned` | `RELPOSNED` | moving_base_node | — | 相対位置 (NED) |
-| `/heading_imu` | `Imu` | moving_base_node | — | ヘディング (四元数) |
-| `/gnss_odom` | `Odometry` | moving_base_node | look_ahead_control | GNSS測位 + ヘディング |
-| `/utm` | `Odometry` | rtk_rover_node | — | UTM座標オドメトリ |
+| `/gnss/solution` | `GnssSolution` | lg580p_node / fake_gnss_node (legacy: rtk_rover_node → moving_base_node) | mavlink_bridge, look_ahead_control | 統合GNSS解 |
+| `/gngga` | `String` | lg580p_node (legacy: rtk_rover_node) | ntrip_client | NMEA GGA文 |
+| `/ntrip_rtcm` | `UInt8MultiArray` | ntrip_client | lg580p_node (legacy: rtk_rover_node) | RTCM補正データ |
+| `/heading_imu` | `Imu` | lg580p_node (legacy: moving_base_node) | — | ヘディング (四元数) |
+| `/gnss_odom` | `Odometry` | lg580p_node (legacy: moving_base_node) | look_ahead_control | GNSS測位 + ヘディング |
+| `/navsatfix` | `NavSatFix` | lg580p_node (legacy: rtk_rover_node) | — | センサ標準GNSS位置 |
+| `/pvt` | `PVT` | rtk_rover_node (legacy) | — | UBX-NAV-PVT |
+| `/hpposllh` | `HPPOSLLH` | rtk_rover_node (legacy) | — | 高精度位置 |
+| `/relposned` | `RELPOSNED` | moving_base_node (legacy) | — | 相対位置 (NED) |
+| `/utm` | `Odometry` | rtk_rover_node (legacy) | — | UTM座標オドメトリ |
 | `/mav/mission` | `Float64MultiArray` | mavlink_bridge | look_ahead_control | ミッションWP [seq, total, cmd, lat, lon] |
 | `/mav/modes` | `MavModes` | mavlink_bridge | look_ahead_control | ARM/モード状態 |
 | `/mav/joystick` | `TwistStamped` | mavlink_bridge | — | GCSジョイスティック |
@@ -298,11 +337,13 @@ Gazebo Harmonicによるスキッドステアローバーシミュレーショ�
 ### データフロー図 (RTKパイプライン)
 
 ```
-NTRIPサーバー ──TCP──> ntrip_client ──/ntrip_rtcm──> rtk_rover_node ──シリアル書込──> u-blox
+NTRIPサーバー ──TCP──> ntrip_client ──/ntrip_rtcm──> lg580p_node ──シリアル書込──> LG580P
                          ^                              |
                          |                              v
                      /gngga (GGA位置フィードバック)    /gnss/solution
 ```
+
+(legacy構成では `lg580p_node` の代わりに `rtk_rover_node` ← → `moving_base_node` の2ノードが同じ役割を担う)
 
 ### データフロー図 (制御パイプライン)
 
@@ -360,11 +401,11 @@ MAVLinkはNED座標系 (North-East-Down) を使用するため、`mavlink_ros2_b
 source /opt/ros/jazzy/setup.bash
 
 # 2. pyproj用venvの有効化
-#    (ublox_gnss_driver, look_ahead_control のビルドに必要)
-source ~/ros2_ws/.venv/bin/activate
+#    (lg580p_gnss_driver, look_ahead_control, ublox_gnss_driver(legacy) のビルドに必要)
+source ~/minix_ws/.venv/bin/activate
 
 # 3. bme_common_msgs を先にビルド (他パッケージが依存)
-cd ~/ros2_ws
+cd ~/minix_ws
 colcon build --packages-select bme_common_msgs
 source install/setup.bash
 
@@ -378,7 +419,7 @@ source install/setup.bash
 - `pyproj` は `rosdep` ではなく venv にインストールされている。`package.xml` に追加しないこと
 - pyproj依存パッケージのビルドにはvenv pythonが必要:
   ```bash
-  /home/kikai/ros2_ws/.venv/bin/python3 -m colcon build --packages-select <package_name>
+  /home/kariko/minix_ws/.venv/bin/python3 -m colcon build --packages-select <package_name>
   ```
 
 ### 単体パッケージのビルド
@@ -405,10 +446,11 @@ colcon test-result --verbose
 ```bash
 # 共通: 環境セットアップ (各ターミナルで実行)
 source /opt/ros/jazzy/setup.bash
-source ~/ros2_ws/install/setup.bash
+source ~/minix_ws/install/setup.bash
 
-# 1. GNSS ドライバ (RTKローバー + Moving Base)
-ros2 launch ublox_gnss_driver ublox_gnss.launch.py
+# 1. GNSS ドライバ (LG580P, 位置+ヘディング統合)
+ros2 launch lg580p_gnss_driver lg580p_gnss.launch.py
+# legacy (u-blox 2受信機構成): ros2 launch ublox_gnss_driver ublox_gnss.launch.py
 
 # 2. NTRIP クライアント (RTK補正データ)
 ros2 launch ntrip_client ntrip_client.launch.py
@@ -437,7 +479,7 @@ ros2 run maestro_driver maestro_driver_node
 ```bash
 # 共通: 環境セットアップ
 source /opt/ros/jazzy/setup.bash
-source ~/ros2_ws/install/setup.bash
+source ~/minix_ws/install/setup.bash
 
 # 1. Gazeboシミュレーション起動
 #    (ローバーモデル + fake_gnss_node + ros_gz_bridge を含む)
@@ -470,7 +512,7 @@ ros2 run bme_simplerover_gazebo teleop_key_node
 ### フェイルセーフ
 
 - **maestro_driver**: `/rc_pwm` が0.5秒途絶すると中立PWM (1500us) を自動送信。シャットダウン時もフェイルセーフ動作
-- **ublox_gnss_driver**: シリアル切断時は自動再接続
+- **lg580p_gnss_driver / ublox_gnss_driver (legacy)**: シリアル切断時は自動再接続
 - **ntrip_client**: ソケットエラー時は2秒間隔で自動再接続
 
 ### ArduPilotモード定数

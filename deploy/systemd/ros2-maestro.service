@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=kikai
-ExecStart=/home/kikai/ros2_ws/deploy/scripts/launch_maestro.sh
+User=kariko
+ExecStart=/home/kariko/minix_ws/deploy/scripts/launch_maestro.sh
 Restart=always
 RestartSec=5
 StandardOutput=journal

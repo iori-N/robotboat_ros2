@@ -1,0 +1,17 @@
+[Unit]
+Description=ROS2 LG580P GNSS Driver
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kariko
+ExecStart=/home/kariko/minix_ws/deploy/scripts/launch_lg580p.sh
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

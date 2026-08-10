@@ -1,6 +1,6 @@
-sudo cp ~/ros2_ws/deploy/systemd/*.service /etc/systemd/system/
+sudo cp ~/minix_ws/deploy/systemd/*.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable ros2-ublox ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro
+sudo systemctl enable ros2-lg580p ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro
 
-sudo systemctl start ros2-ublox ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro
+sudo systemctl start ros2-lg580p ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro
 
