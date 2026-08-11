@@ -1,6 +1,6 @@
 # systemd 自動起動サービス
 
-自律走行ローバーの5つの ROS2 ノードを systemd で起動時に自動実行する。
+自律走行ローバーの6つの ROS2 ノードを systemd で起動時に自動実行する。
 
 GNSSドライバは u-blox 2受信機構成(`ublox_gnss_driver`)から Quectel LG580P
 単一受信機構成(`lg580p_gnss_driver`)に移行済み。`setup_services.sh` は
@@ -12,8 +12,8 @@ GNSSドライバは u-blox 2受信機構成(`ublox_gnss_driver`)から Quectel L
 | ファイル | 役割 |
 |------|------|
 | `env.sh` | 共通環境設定: ROS2 + ワークスペースの source、`ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` |
-| `scripts/launch_*.sh` | 各ノードの起動スクリプト（現行5つ + legacy `launch_ublox.sh`）。lg580p と look_ahead (と legacy ublox) は venv も activate。全て `exec` で PID を引き継ぎ |
-| `systemd/ros2-*.service` | systemd ユニットファイル（現行5つ: lg580p/ntrip/mavlink/look-ahead/maestro。旧 `ros2-ublox.service` はロールバック用に残置、既定では無効） |
+| `scripts/launch_*.sh` | 各ノードの起動スクリプト（現行6つ + legacy `launch_ublox.sh`）。lg580p と look_ahead (と legacy ublox) は venv も activate。全て `exec` で PID を引き継ぎ |
+| `systemd/ros2-*.service` | systemd ユニットファイル（現行6つ: lg580p/ntrip/mavlink/look-ahead/maestro/power-logger。旧 `ros2-ublox.service` はロールバック用に残置、既定では無効） |
 | `setup_services.sh` | インストーラ: 権限付与、旧`ros2-ublox`の無効化、シンボリックリンク、daemon-reload、enable、dialout 確認 |
 
 ## インストール方法
@@ -30,8 +30,8 @@ sudo systemctl start ros2-mavlink
 journalctl -u ros2-mavlink -f
 
 # 全サービス起動/停止
-sudo systemctl start ros2-lg580p ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro
-sudo systemctl stop ros2-lg580p ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro
+sudo systemctl start ros2-lg580p ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro ros2-power-logger
+sudo systemctl stop ros2-lg580p ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro ros2-power-logger
 ```
 
 ## u-blox 構成へのロールバック

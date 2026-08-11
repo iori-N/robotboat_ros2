@@ -141,6 +141,7 @@ ROS2 Jazzy + Gazebo Harmonic で構成される。
 | `mavlink_ros2_bridge` | C++ | ament_cmake | MAVLink/QGCブリッジ |
 | `look_ahead_control` | Python | ament_python | Pure Pursuit経路追従制御 |
 | `maestro_driver` | Python | ament_python | Pololu Maestroサーボドライバ |
+| `power_logger` | Python | ament_python | ESP32電流・電圧・電力ロガー |
 | `bme_simplerover_gazebo` | C++/Python | ament_cmake | Gazeboシミュレーション |
 
 ### 3.1 bme_common_msgs
@@ -293,7 +294,28 @@ Pololu Maestroサーボコントローラのドライバ。ROS2 RC PWMをMaestro
 - `failsafe_timeout`: タイムアウト秒数 (デフォルト 0.5)
 - `pwm_min` / `pwm_max`: PWMクランプ範囲 (1000-2000us)
 
-### 3.8 bme_simplerover_gazebo
+### 3.8 power_logger
+
+ESP32 + 電流/電圧センサ(INA219系)から届くシリアルCSVを読み取り、ROS2トピックとして配信するロガー。
+
+以前は `reference/pc_logger.py` としてROS2と無関係にCSVファイルへ直接記録していたが、
+本パッケージへの移行により rosbag での一元記録が可能になった(下記参照)。
+
+**ノード**:
+
+| ノード | 入力 | 主な出力 |
+|--------|------|---------|
+| `power_logger_node` | ESP32シリアルCSV (`esp_ms,bus_V,current_A,power_W`) | `/power_log` |
+
+- ESP32からのCSV行を1行ずつパースし `bme_common_msgs/PowerLog` として配信 (空行・`#`始まりの行・列数不一致の行は破棄)
+- シリアル切断時は2秒間隔で自動再接続 (`lg580p_node` と同じパターン)
+- `look_ahead_control` の `rosbag_recorder_node` はARM+AUTOモード時に `ros2 bag record -a` で全トピックを録画するため、`power_logger_node` を起動しておくだけで `/power_log` も自動的にrosbagに含まれる (追加の統合作業は不要)
+
+**パラメータ**:
+- `port`: シリアルデバイスパス (例: `/dev/serial/by-id/usb-Silicon_Labs_CP2102N_...`)
+- `baudrate`: 115200 (ESP32側 `Serial.begin()` と一致させる)
+
+### 3.9 bme_simplerover_gazebo
 
 Gazebo Harmonicによるスキッドステアローバーシミュレーション。
 
@@ -332,6 +354,7 @@ Gazebo Harmonicによるスキッドステアローバーシミュレーショ�
 | `/rc_pwm` | `UInt16MultiArray` | look_ahead_control | maestro_driver | RC PWM [ch1, ch2] |
 | `/cmd_vel` | `Twist` | look_ahead_control / teleop | Gazebo DiffDrive | 速度指令 |
 | `/auto_log` | `AutoLog` | look_ahead_control | mavlink_bridge | テレメトリ |
+| `/power_log` | `PowerLog` | power_logger_node | (rosbag_recorder_node) | ESP32電流・電圧・電力ログ |
 | `/ground_truth/odom` | `Odometry` | Gazebo | fake_gnss_node | シミュレーション地上真値 |
 
 ### データフロー図 (RTKパイプライン)
@@ -463,6 +486,9 @@ ros2 launch look_ahead_control look_ahead_following.launch.py
 
 # 5. サーボドライバ
 ros2 run maestro_driver maestro_driver_node
+
+# 6. 電力ロガー (ESP32電流・電圧センサ)
+ros2 launch power_logger power_logger.launch.py
 ```
 
 **運用フロー**:

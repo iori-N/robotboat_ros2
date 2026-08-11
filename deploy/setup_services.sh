@@ -6,7 +6,7 @@ set -euo pipefail
 
 DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
 SYSTEMD_DIR="/etc/systemd/system"
-SERVICES=(ros2-lg580p ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro)
+SERVICES=(ros2-lg580p ros2-ntrip ros2-mavlink ros2-look-ahead ros2-maestro ros2-power-logger)
 # GNSS driver replaced by lg580p_gnss_driver (single LG580P receiver).
 # Kept disabled here for rollback; see deploy/README.md.
 LEGACY_SERVICES=(ros2-ublox)
