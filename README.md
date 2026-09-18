@@ -1,3 +1,27 @@
+# minix_ws
+
+水草刈取り用自律艇（USV）の ROS 2 ワークスペース。
+
+## 環境
+
+- Ubuntu: Ubuntu 24.04.4 LTS
+- ROS 2: jazzy
+- 制御PC: NEO-Z150-Aero (MINIX)
+
+## 再構築
+
+```bash
+mkdir -p ~/minix_ws && cd ~/minix_ws
+git clone git@github.com:iori-N/minix_ws.git .
+vcs import src < minix_ws.repos
+colcon build --symlink-install
+```
+
+パッケージ一覧と各リポジトリのURLは `minix_ws.repos` を参照。
+`iori-N/` のものは自作・改造済み、それ以外は上流のまま。
+
+---
+
 # 自律航行ボート ROS2プロジェクト
 
 RTK-GNSSによる高精度測位を用いた自律走行地上ローバーシステム。
