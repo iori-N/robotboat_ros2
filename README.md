@@ -1,41 +1,18 @@
 # minix_ws
 
-水草刈取り用自律艇（USV）の ROS 2 ワークスペース。
-
-## 環境
-
-- Ubuntu: Ubuntu 24.04.4 LTS
-- ROS 2: jazzy
-- 制御PC: NEO-Z150-Aero (MINIX)
-
-## 再構築
-
-```bash
-mkdir -p ~/minix_ws && cd ~/minix_ws
-git clone git@github.com:iori-N/minix_ws.git .
-vcs import src < minix_ws.repos
-colcon build --symlink-install
-```
-
-パッケージ一覧と各リポジトリのURLは `minix_ws.repos` を参照。
-`iori-N/` のものは自作・改造済み、それ以外は上流のまま。
-
----
-
-# 自律航行ボート ROS2プロジェクト
-
-RTK-GNSSによる高精度測位を用いた自律走行地上ローバーシステム。
+水草刈取り用自律艇（USV）の ROS 2 ワークスペース。RTK-GNSSによる高精度測位を用いた自律航行ボートシステム。
 
 詳細なシステム構成・パッケージ仕様・設計規約については [doc/system-overview.md](doc/system-overview.md) を参照。
 
-## 必要環境
+## 環境
 
 | 項目 | バージョン |
 |------|-----------|
+| OS | Ubuntu 24.04.4 LTS |
 | ROS2 | Jazzy |
 | Gazebo | Harmonic (シミュレーション使用時) |
 | Python | 3 |
-| OS | Ubuntu 24.04 (推奨) |
+| 制御PC | NEO-Z150-Aero (MINIX) |
 
 ### 追加依存
 
@@ -43,12 +20,12 @@ RTK-GNSSによる高精度測位を用いた自律走行地上ローバーシス
   - 使用パッケージ: `lg580p_gnss_driver`, `look_ahead_control`, `ublox_gnss_driver` (legacy)
 - **pyserial**: `lg580p_gnss_driver`, `maestro_driver`, `ublox_gnss_driver` (legacy) で使用
 
-## ソースコードの取得
+## セットアップ
 
 依存パッケージのインストール、ソース取得、venv作成、`pyproj` インストール、ビルドまでまとめて実行する場合:
 
 ```bash
-git clone https://github.com/IgarashiBME/robotboat_ros2.git ~/minix_ws
+git clone git@github.com:iori-N/robotboat_ros2.git ~/minix_ws
 cd ~/minix_ws
 tools/setup_workspace.sh
 ```
@@ -62,9 +39,9 @@ tools/setup_workspace.sh --no-build
 手動で取得する場合:
 
 ```bash
-git clone https://github.com/IgarashiBME/robotboat_ros2.git ~/minix_ws
+git clone git@github.com:iori-N/robotboat_ros2.git ~/minix_ws
 cd ~/minix_ws
-vcs import --recursive src < robotboat.repos
+vcs import --recursive src < minix_ws.repos
 ```
 
 既に `vcs import` 済みで `mavlink_ros2_bridge/include/c_library_v2/` が未取得の場合:
@@ -72,6 +49,9 @@ vcs import --recursive src < robotboat.repos
 ```bash
 git -C src/mavlink_ros2_bridge submodule update --init --recursive
 ```
+
+パッケージ一覧と各リポジトリのURLは `minix_ws.repos` を参照。
+`iori-N/` のものは自作・改造済みフォーク、それ以外は upstream (IgarashiBME等) をそのまま参照している。
 
 ## ビルド
 
@@ -95,7 +75,7 @@ source install/setup.bash
 ### 単体パッケージのビルド
 
 ```bash
-colcon build --packages-select <package_name>
+colcon build --symlink-install --packages-select <package_name>
 ```
 
 ## 起動

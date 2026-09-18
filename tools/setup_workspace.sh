@@ -59,8 +59,8 @@ if [ ! -f "$ROS_SETUP" ]; then
   exit 1
 fi
 
-if [ ! -f "${WS_DIR}/robotboat.repos" ]; then
-  echo "robotboat.repos not found in ${WS_DIR}" >&2
+if [ ! -f "${WS_DIR}/minix_ws.repos" ]; then
+  echo "minix_ws.repos not found in ${WS_DIR}" >&2
   exit 1
 fi
 
@@ -76,7 +76,7 @@ if [ "$RUN_APT" -eq 1 ]; then
 fi
 
 mkdir -p "${WS_DIR}/src"
-vcs import --recursive "${WS_DIR}/src" < "${WS_DIR}/robotboat.repos"
+vcs import --recursive "${WS_DIR}/src" < "${WS_DIR}/minix_ws.repos"
 
 if [ -d "${WS_DIR}/src/mavlink_ros2_bridge/.git" ]; then
   git -C "${WS_DIR}/src/mavlink_ros2_bridge" submodule update --init --recursive

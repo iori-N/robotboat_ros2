@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-ROS2 Jazzy workspace for an autonomous boat with RTK-GNSS positioning. This repository contains workspace-level configuration (deploy, docs, vcstool .repos); source packages live in `src/` and are managed by vcstool via `robotboat.repos` (gitignored).
+ROS2 Jazzy workspace for an autonomous boat with RTK-GNSS positioning. This repository contains workspace-level configuration (deploy, docs, vcstool .repos); source packages live in `src/` and are managed by vcstool via `minix_ws.repos` (gitignored).
 
 ## Build Commands
 
 ```bash
 # Import source packages
-vcs import src < robotboat.repos
+vcs import src < minix_ws.repos
 
 # Build (bme_common_msgs must be built first)
 source /opt/ros/jazzy/setup.bash
@@ -58,7 +58,7 @@ No functional unit tests — only ament lint tests (flake8, pep257, copyright).
 
 ## Repository Structure
 
-- `robotboat.repos` — vcstool definitions for 7 source packages (all from IgarashiBME GitHub)
+- `minix_ws.repos` — vcstool definitions for source packages (`iori-N/` forks are self-authored/modified; others reference upstream, mainly IgarashiBME GitHub, as-is)
 - `deploy/` — systemd service files, launch scripts, installer for auto-start on boot
 - `doc/` — system-overview.md (full architecture), deployment.md, operation.md
 - `src/` — gitignored; populated by `vcs import`
