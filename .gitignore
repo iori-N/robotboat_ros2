@@ -17,3 +17,9 @@ __pycache__/
 
 # OS
 .DS_Store
+.venv/
+*.zip
+build/
+install/
+log/
+src/

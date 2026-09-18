@@ -1,0 +1,41 @@
+repositories:
+  bme_common_msgs:
+    type: git
+    url: git@github.com:iori-N/bme_common_msgs.git
+    version: df439555468e473bbed463b3efe8390b596a09f4
+  bme_simplerover_gazebo:
+    type: git
+    url: https://github.com/IgarashiBME/bme_simplerover_gazebo.git
+    version: 9f9064390ea2eb40b9e85a4fa6d8091b959c8cc1
+  lg580p_gnss_driver:
+    type: git
+    url: git@github.com:iori-N/lg580p_gnss_driver.git
+    version: 92058cda73dc96708bd53d9c4ffaf4fd5ca24fce
+  look_ahead_control:
+    type: git
+    url: git@github.com:iori-N/look_ahead_control.git
+    version: e53339cee5a9139afde53a3159e4b11a37e45609
+  maestro_driver:
+    type: git
+    url: git@github.com:iori-N/maestro_driver.git
+    version: b686b950496f73704bfb78f5e95ba0957d6974fc
+  mavlink_ros2_bridge:
+    type: git
+    url: git@github.com:iori-N/mavlink_ros2_bridge.git
+    version: 642b450aa7cd7f05178b3c8ed4c00f66d4c424a7
+  ntrip_client:
+    type: git
+    url: git@github.com:iori-N/ntrip_client.git
+    version: b52d3cea141b8ed62678193ca51d1b5635d5a777
+  power_logger:
+    type: git
+    url: git@github.com:iori-N/power_logger.git
+    version: 0e0fbe6f9a37e94450c05354117f12a52c46ef46
+  ros2_unbag:
+    type: git
+    url: https://github.com/ika-rwth-aachen/ros2_unbag.git
+    version: af37b1709713d0e4573df2995a47c198d02889b4
+  ublox_gnss_driver:
+    type: git
+    url: https://github.com/IgarashiBME/ublox_gnss_driver.git
+    version: 1dce611c9e3d4ecbb43fdf919b966911af93331a
