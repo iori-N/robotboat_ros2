@@ -296,24 +296,23 @@ Pololu Maestroサーボコントローラのドライバ。ROS2 RC PWMをMaestro
 
 ### 3.8 power_logger
 
-ESP32 + 電流/電圧センサ(INA219系)から届くシリアルCSVを読み取り、ROS2トピックとして配信するロガー。
+ESP32 + INA228 2台（I2Cアドレス `0x40` / `0x41`）の11列CSVを受信する。
+仕様は [CSV_SPEC.md](CSV_SPEC.md)、運用・記録形式は [power-logger.md](power-logger.md) を参照。
 
-以前は `reference/pc_logger.py` としてROS2と無関係にCSVファイルへ直接記録していたが、
-本パッケージへの移行により rosbag での一元記録が可能になった(下記参照)。
+**起動構成は従来と同じ**：`power_logger_node` を
+`ros2 launch power_logger power_logger.launch.py` で起動する。
+既存の `ros2-power-logger.service` から起動でき、追加ノードは不要。
 
-**ノード**:
+| トピック | 型 | 内容 |
+|----------|----|------|
+| `/power_log` | `Ina228Measurement` | センサー1台の測定または異常行 |
+| `/power_logger/raw` | `PowerLoggerRaw` | 受信行と切断時などに破棄した未完了断片 |
+| `/power_logger/session` | `PowerLoggerSession` | セッションID、開始理由、受信した起動設定など |
 
-| ノード | 入力 | 主な出力 |
-|--------|------|---------|
-| `power_logger_node` | ESP32シリアルCSV (`esp_ms,bus_V,current_A,power_W`) | `/power_log` |
-
-- ESP32からのCSV行を1行ずつパースし `bme_common_msgs/PowerLog` として配信 (空行・`#`始まりの行・列数不一致の行は破棄)
-- シリアル切断時は2秒間隔で自動再接続 (`lg580p_node` と同じパターン)
-- `look_ahead_control` の `rosbag_recorder_node` はARM+AUTOモード時に `ros2 bag record -a` で全トピックを録画するため、`power_logger_node` を起動しておくだけで `/power_log` も自動的にrosbagに含まれる (追加の統合作業は不要)
-
-**パラメータ**:
-- `port`: シリアルデバイスパス (例: `/dev/serial/by-id/usb-Silicon_Labs_CP2102N_...`)
-- `baudrate`: 115200 (ESP32側 `Serial.begin()` と一致させる)
+- 2台の値は取得順に配信し、同じ連番を同時刻として結合しない。
+- `look_ahead_control` の録画ノードがARM＋AUTO時に全トピックを記録する。
+- ローカルのCSV・生ログファイルへの保存は行わない。
+- `port` / `baudrate` の設定方法を維持。`session_publish_period` は既定5秒。
 
 ### 3.9 bme_simplerover_gazebo
 
@@ -354,7 +353,7 @@ Gazebo Harmonicによるスキッドステアローバーシミュレーショ�
 | `/rc_pwm` | `UInt16MultiArray` | look_ahead_control | maestro_driver | RC PWM [ch1, ch2] |
 | `/cmd_vel` | `Twist` | look_ahead_control / teleop | Gazebo DiffDrive | 速度指令 |
 | `/auto_log` | `AutoLog` | look_ahead_control | mavlink_bridge | テレメトリ |
-| `/power_log` | `PowerLog` | power_logger_node | (rosbag_recorder_node) | ESP32電流・電圧・電力ログ |
+| `/power_log` | `Ina228Measurement` | power_logger_node | (rosbag_recorder_node) | ESP32電流・電圧・電力ログ |
 | `/ground_truth/odom` | `Odometry` | Gazebo | fake_gnss_node | シミュレーション地上真値 |
 
 ### データフロー図 (RTKパイプライン)
